@@ -6,7 +6,7 @@ import { calculateMonthStats } from '../../utils/analytics';
 
 export default function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth();
-  const { habits, completions, selectedYear, selectedMonth } = useHabits();
+  const { activeHabits, completions, selectedYear, selectedMonth } = useHabits();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(profile?.name || '');
   const [username, setUsername] = useState(profile?.username || '');
@@ -14,10 +14,10 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
 
   const stats = useMemo(() => {
-    return calculateMonthStats(habits, completions, selectedYear, selectedMonth);
-  }, [habits, completions, selectedYear, selectedMonth]);
+    return calculateMonthStats(activeHabits, completions, selectedYear, selectedMonth);
+  }, [activeHabits, completions, selectedYear, selectedMonth]);
 
-  const activeHabitsCount = habits.filter(h => h.active).length;
+  const activeHabitsCount = activeHabits.length;
 
   const getInitial = () => {
     if (profile?.name) return profile.name.charAt(0).toUpperCase();

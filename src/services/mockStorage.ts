@@ -120,6 +120,30 @@ export function unarchiveLocalHabit(uid: string, habitId: string): void {
 export function deleteLocalHabit(uid: string, habitId: string): void {
   const habits = getLocalHabits(uid).filter((h) => h.id !== habitId);
   saveLocalHabits(uid, habits);
+
+  // Also delete all completion records belonging to that habit
+  const key = `${STORAGE_KEY_PREFIX}completions_${uid}`;
+  const raw = localStorage.getItem(key);
+  if (raw) {
+    try {
+      const store: Record<string, Record<string, boolean>> = JSON.parse(raw);
+      let changed = false;
+      for (const date of Object.keys(store)) {
+        if (store[date]?.[habitId] !== undefined) {
+          delete store[date][habitId];
+          changed = true;
+          if (Object.keys(store[date]).length === 0) {
+            delete store[date];
+          }
+        }
+      }
+      if (changed) {
+        localStorage.setItem(key, JSON.stringify(store));
+      }
+    } catch {
+      // Ignored
+    }
+  }
 }
 
 // Completions: stored as Record<date, Record<habitId, boolean>>

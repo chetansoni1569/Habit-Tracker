@@ -3,11 +3,11 @@ import { useHabits } from '../../contexts/HabitContext';
 import { calculateMonthStats } from '../../utils/analytics';
 
 export default function StatsCard() {
-  const { habits, completions, selectedYear, selectedMonth } = useHabits();
+  const { activeHabits, completions, selectedYear, selectedMonth } = useHabits();
 
   const stats = useMemo(() => {
-    return calculateMonthStats(habits, completions, selectedYear, selectedMonth);
-  }, [habits, completions, selectedYear, selectedMonth]);
+    return calculateMonthStats(activeHabits, completions, selectedYear, selectedMonth);
+  }, [activeHabits, completions, selectedYear, selectedMonth]);
 
   return (
     <div className="stats-card">

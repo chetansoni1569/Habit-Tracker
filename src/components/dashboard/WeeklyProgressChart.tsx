@@ -4,12 +4,12 @@ import { useHabits } from '../../contexts/HabitContext';
 import { calculateWeeklyProgress } from '../../utils/analytics';
 
 export default function WeeklyProgressChart() {
-  const { habits, completions, selectedYear, selectedMonth } = useHabits();
+  const { activeHabits, completions, selectedYear, selectedMonth } = useHabits();
 
   const data = useMemo(() => {
-    return calculateWeeklyProgress(habits, completions, selectedYear, selectedMonth)
+    return calculateWeeklyProgress(activeHabits, completions, selectedYear, selectedMonth)
       .map(w => ({ name: `week ${w.week}`, percentage: w.percentage }));
-  }, [habits, completions, selectedYear, selectedMonth]);
+  }, [activeHabits, completions, selectedYear, selectedMonth]);
 
   return (
     <div className="chart-section">

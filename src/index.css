@@ -1071,14 +1071,39 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .habit-list-item:hover { background: var(--bg-hover); }
 .habit-list-emoji { font-size: 1.25rem; }
 .habit-list-name { flex: 1; font-size: 0.88rem; font-weight: 500; color: var(--text-primary); }
-.habit-list-actions { display: flex; gap: 6px; }
-.habit-action-btn {
-  padding: 6px 8px; border-radius: var(--radius-sm);
-  color: var(--text-muted); transition: all 0.15s;
-  background: var(--bg-card-light);
+.habit-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
-.habit-action-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
-.habit-action-btn.delete:hover { color: #fca5a5; background: rgba(239, 68, 68, 0.2); }
+.habit-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  background: var(--bg-card-light);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.habit-action-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--border-color-hover);
+}
+.habit-action-btn.delete {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.habit-action-btn.delete:hover {
+  color: #ffffff;
+  background: #dc2626;
+  border-color: #dc2626;
+}
 
 /* ===== Profile Page ===== */
 .page-container { padding: 32px 24px; max-width: 680px; margin: 0 auto; }

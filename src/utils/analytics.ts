@@ -49,8 +49,9 @@ export function calculateWeeklyProgress(
   year: number,
   month: number
 ): { week: number; percentage: number }[] {
+  const activeHabits = habits.filter((h) => h.active !== false);
   const daysInMonth = getDaysInMonth(new Date(year, month));
-  const totalHabits = habits.length;
+  const totalHabits = activeHabits.length;
 
   if (totalHabits === 0) return [];
 
@@ -79,7 +80,7 @@ export function calculateWeeklyProgress(
 
     weekDays.forEach((d) => {
       const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      habits.forEach((habit) => {
+      activeHabits.forEach((habit) => {
         if (completions[dateKey]?.[habit.id]) {
           completed++;
         }
@@ -100,13 +101,14 @@ export function calculateMonthStats(
   month: number
 ): MonthStats {
   const daysInMonth = getDaysInMonth(new Date(year, month));
-  const totalHabits = habits.length;
+  const activeHabits = habits.filter((h) => h.active !== false);
+  const totalHabits = activeHabits.length;
   const goal = totalHabits * daysInMonth;
 
   let completed = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    habits.forEach((habit) => {
+    activeHabits.forEach((habit) => {
       if (completions[dateKey]?.[habit.id]) {
         completed++;
       }
@@ -125,9 +127,10 @@ export function calculateHabitAnalysis(
   year: number,
   month: number
 ): HabitAnalysis[] {
+  const activeHabits = habits.filter((h) => h.active !== false);
   const daysInMonth = getDaysInMonth(new Date(year, month));
 
-  return habits.map((habit) => {
+  return activeHabits.map((habit) => {
     let actual = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -159,7 +162,8 @@ export function getTopHabits(
   month: number,
   limit = 10
 ): { rank: number; name: string; emoji: string; percentage: number }[] {
-  const analysis = calculateHabitAnalysis(habits, completions, year, month);
+  const activeHabits = habits.filter((h) => h.active !== false);
+  const analysis = calculateHabitAnalysis(activeHabits, completions, year, month);
 
   return analysis
     .sort((a, b) => b.percentage - a.percentage)

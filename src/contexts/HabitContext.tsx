@@ -7,6 +7,7 @@ import {
   updateHabit as updateHabitService,
   archiveHabit as archiveHabitService,
   unarchiveHabit as unarchiveHabitService,
+  deleteHabit as deleteHabitService,
   toggleHabitCompletion,
   getCompletionsForMonth,
   getMentalStatesForMonth,
@@ -35,13 +36,14 @@ interface HabitContextType {
   archiveHabit: (habitId: string) => Promise<void>;
   unarchiveHabit: (habitId: string) => Promise<void>;
   removeHabit: (habitId: string) => Promise<void>;
+  deleteHabit: (habitId: string) => Promise<void>;
   updateMentalState: (date: string, mood: number, motivation: number) => Promise<void>;
   deleteMentalState: (date: string) => Promise<void>;
   clearPastMentalStates: () => Promise<void>;
   refreshHabits: () => Promise<void>;
 }
 
-const HabitContext = createContext<HabitContextType | undefined>(undefined);
+export const HabitContext = createContext<HabitContextType | undefined>(undefined);
 
 export function HabitProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -107,13 +109,20 @@ export function HabitProvider({ children }: { children: ReactNode }) {
 
     // Optimistic UI update
     setCompletions((prev) => {
+      const next = { ...prev };
       const dayCompletions = { ...(prev[date] || {}) };
       if (!current) {
         dayCompletions[habitId] = true;
+        next[date] = dayCompletions;
       } else {
         delete dayCompletions[habitId];
+        if (Object.keys(dayCompletions).length === 0) {
+          delete next[date];
+        } else {
+          next[date] = dayCompletions;
+        }
       }
-      return { ...prev, [date]: dayCompletions };
+      return next;
     });
 
     try {
@@ -122,13 +131,20 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       console.error('Error toggling completion in Firestore:', error);
       // Revert optimistic update on failure
       setCompletions((prev) => {
+        const next = { ...prev };
         const dayCompletions = { ...(prev[date] || {}) };
         if (current) {
           dayCompletions[habitId] = true;
+          next[date] = dayCompletions;
         } else {
           delete dayCompletions[habitId];
+          if (Object.keys(dayCompletions).length === 0) {
+            delete next[date];
+          } else {
+            next[date] = dayCompletions;
+          }
         }
-        return { ...prev, [date]: dayCompletions };
+        return next;
       });
     }
   };
@@ -185,6 +201,39 @@ export function HabitProvider({ children }: { children: ReactNode }) {
   // Remove habit (archives by default to protect history)
   const removeHabit = async (habitId: string) => {
     await archiveHabit(habitId);
+  };
+
+  // Permanently delete habit from Firestore and all its completions
+  const deleteHabit = async (habitId: string) => {
+    if (!user) return;
+    // Optimistically remove from allHabits
+    setAllHabits((prev) => prev.filter((h) => h.id !== habitId));
+
+    // Optimistically remove all completions for this habit
+    setCompletions((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const date of Object.keys(next)) {
+        if (next[date]?.[habitId] !== undefined) {
+          const dayCompletions = { ...next[date] };
+          delete dayCompletions[habitId];
+          changed = true;
+          if (Object.keys(dayCompletions).length === 0) {
+            delete next[date];
+          } else {
+            next[date] = dayCompletions;
+          }
+        }
+      }
+      return changed ? next : prev;
+    });
+
+    try {
+      await deleteHabitService(user.uid, habitId);
+    } catch (error) {
+      console.error('Error permanently deleting habit:', error);
+      await refreshHabits();
+    }
   };
 
   // Update mental state for an exact date
@@ -258,7 +307,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     return false;
   });
 
-  const activeHabits = allHabits.filter((h) => h.active !== false);
+  const activeHabits = allHabits.filter((h) => h.active !== false).sort((a, b) => a.order - b.order);
   const archivedHabits = allHabits.filter((h) => h.active === false);
 
   return (
@@ -282,6 +331,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
         archiveHabit,
         unarchiveHabit,
         removeHabit,
+        deleteHabit,
         updateMentalState,
         deleteMentalState,
         clearPastMentalStates,

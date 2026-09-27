@@ -5,17 +5,13 @@ import { getMonthCalendarData, isFutureDate } from '../../utils/calendar';
 import HabitManager from '../habits/HabitManager';
 
 export default function HabitTable() {
-  const { habits, completions, selectedYear, selectedMonth, toggleCompletion } = useHabits();
+  const { activeHabits, completions, selectedYear, selectedMonth, toggleCompletion } = useHabits();
   const [showManager, setShowManager] = useState(false);
   const [managerMode, setManagerMode] = useState<'list' | 'create'>('list');
 
   const weeks = useMemo(() => {
     return getMonthCalendarData(selectedYear, selectedMonth);
   }, [selectedYear, selectedMonth]);
-
-  const activeHabits = useMemo(() => {
-    return habits.filter(h => h.active).sort((a, b) => a.order - b.order);
-  }, [habits]);
 
   const handleCheckboxClick = (habitId: string, dateStr: string) => {
     if (isFutureDate(dateStr)) return;

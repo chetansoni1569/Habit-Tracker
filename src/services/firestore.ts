@@ -258,8 +258,25 @@ export async function deleteHabit(uid: string, habitId: string): Promise<void> {
     return;
   }
 
+  // 1. Delete habit document
   const habitRef = doc(db!, 'users', uid, 'habits', habitId);
   await deleteDoc(habitRef);
+
+  // 2. Delete all completion records belonging to this habit
+  try {
+    const q = query(
+      collection(db!, 'users', uid, 'habitCompletions'),
+      where('habitId', '==', habitId)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const batch = writeBatch(db!);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  } catch (err) {
+    console.warn('Could not delete completions for habit from Firestore:', err);
+  }
 }
 
 // ======================== COMPLETIONS ========================
@@ -289,6 +306,21 @@ export async function toggleHabitCompletion(
     });
   } else {
     await deleteDoc(docRef);
+    try {
+      const q = query(
+        collection(db!, 'users', uid, 'habitCompletions'),
+        where('habitId', '==', habitId),
+        where('date', '==', date)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const batch = writeBatch(db!);
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+    } catch {
+      // Query fallback error safely ignored
+    }
   }
 
   return next;
@@ -320,7 +352,7 @@ export async function getCompletionsForMonth(
 
     snap.docs.forEach((d) => {
       const data = d.data();
-      if (data.completed) {
+      if (data.completed === true || data.completed === 'true') {
         if (!completions[data.date]) {
           completions[data.date] = {};
         }
@@ -350,7 +382,7 @@ export async function getAllCompletions(
 
     snap.docs.forEach((d) => {
       const data = d.data();
-      if (data.completed) {
+      if (data.completed === true || data.completed === 'true') {
         if (!completions[data.date]) {
           completions[data.date] = {};
         }

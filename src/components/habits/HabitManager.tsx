@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Pencil, Archive, ArchiveRestore, Plus, Check, X, Smile } from 'lucide-react';
+import { Pencil, Archive, ArchiveRestore, Plus, Check, X, Smile, Trash2 } from 'lucide-react';
 import { useHabits } from '../../contexts/HabitContext';
+import type { Habit } from '../../types';
 
 export const HABIT_EMOJIS = [
   '💻', '📚', '🏃', '🏋️', '🧘', '💪', '🥗', '💧',
@@ -14,7 +15,7 @@ interface HabitManagerProps {
 }
 
 export default function HabitManager({ onClose, initialMode = 'list' }: HabitManagerProps) {
-  const { allHabits, addHabit, editHabit, archiveHabit, unarchiveHabit } = useHabits();
+  const { allHabits, addHabit, editHabit, archiveHabit, unarchiveHabit, deleteHabit } = useHabits();
   const [tab, setTab] = useState<'active' | 'archived'>('active');
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>(initialMode);
   const [editId, setEditId] = useState('');
@@ -24,6 +25,8 @@ export default function HabitManager({ onClose, initialMode = 'list' }: HabitMan
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
+  const [deleteConfirmHabit, setDeleteConfirmHabit] = useState<Habit | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
@@ -96,6 +99,26 @@ export default function HabitManager({ onClose, initialMode = 'list' }: HabitMan
     setLoading(true);
     await unarchiveHabit(habitId);
     setLoading(false);
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!deleteConfirmHabit) return;
+    setDeleting(true);
+    try {
+      await deleteHabit(deleteConfirmHabit.id);
+      setDeleteConfirmHabit(null);
+    } catch (err: any) {
+      console.error('Error permanently deleting habit:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteTheHabit = (habitId: string) => {
+    const habit = allHabits.find((h) => h.id === habitId);
+    if (habit) {
+      setDeleteConfirmHabit(habit);
+    }
   };
 
   const resetForm = () => {
@@ -185,16 +208,22 @@ export default function HabitManager({ onClose, initialMode = 'list' }: HabitMan
                   ) : (
                     activeHabits.map((habit) => (
                       <div key={habit.id} className="habit-list-item">
-                        <span className="habit-list-emoji">{habit.emoji}</span>
-                        <div style={{ flex: 1 }}>
-                          <div className="habit-list-name">{habit.name}</div>
+                        <span className="habit-list-emoji" style={{ cursor: 'pointer' }} onClick={() => startEdit(habit)}>{habit.emoji}</span>
+                        <div
+                          style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                          onClick={() => startEdit(habit)}
+                          title="Click to edit habit"
+                        >
+                          <div className="habit-list-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {habit.name}
+                          </div>
                           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                             {habit.frequency}
                           </div>
                         </div>
 
                         {archiveConfirmId === habit.id ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Archive?</span>
                             <button
                               type="button"
@@ -215,12 +244,13 @@ export default function HabitManager({ onClose, initialMode = 'list' }: HabitMan
                             </button>
                           </div>
                         ) : (
-                          <div className="habit-list-actions">
+                          <div className="habit-list-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                             <button
                               type="button"
                               className="habit-action-btn"
                               onClick={() => startEdit(habit)}
                               title="Edit habit"
+                              aria-label={`Edit ${habit.name}`}
                             >
                               <Pencil size={15} />
                             </button>
@@ -229,8 +259,27 @@ export default function HabitManager({ onClose, initialMode = 'list' }: HabitMan
                               className="habit-action-btn"
                               onClick={() => setArchiveConfirmId(habit.id)}
                               title="Archive habit (preserves historical data)"
+                              aria-label={`Archive ${habit.name}`}
                             >
                               <Archive size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="habit-action-btn delete"
+                              onClick={() => deleteTheHabit(habit.id)}
+                              title="Delete habit permanently"
+                              aria-label={`Delete ${habit.name} permanently`}
+                              style={{
+                                color: '#ef4444',
+                                borderColor: 'rgba(239, 68, 68, 0.4)',
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <Trash2 size={15} color="#ef4444" />
                             </button>
                           </div>
                         )}
@@ -271,17 +320,29 @@ export default function HabitManager({ onClose, initialMode = 'list' }: HabitMan
                           Archived {habit.archivedAt ? new Date(habit.archivedAt).toLocaleDateString() : ''}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => handleUnarchive(habit.id)}
-                        disabled={loading}
-                        style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                        title="Restore to active habits"
-                      >
-                        <ArchiveRestore size={14} />
-                        Unarchive
-                      </button>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => handleUnarchive(habit.id)}
+                          disabled={loading}
+                          style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          title="Restore to active habits"
+                        >
+                          <ArchiveRestore size={14} />
+                          Unarchive
+                        </button>
+                        <button
+                          type="button"
+                          className="habit-action-btn"
+                          style={{ color: '#ef4444', padding: '6px' }}
+                          onClick={() => setDeleteConfirmHabit(habit)}
+                          title="Delete habit permanently"
+                          aria-label={`Delete ${habit.name} permanently`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -459,6 +520,63 @@ export default function HabitManager({ onClose, initialMode = 'list' }: HabitMan
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog for Permanent Habit Deletion */}
+      {deleteConfirmHabit && (
+        <div className="modal-overlay" style={{ zIndex: 1200 }} onClick={() => !deleting && setDeleteConfirmHabit(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-title" style={{ fontSize: '0.95rem', color: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Delete this habit permanently?</span>
+              <button
+                type="button"
+                onClick={() => !deleting && setDeleteConfirmHabit(null)}
+                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px' }}
+                aria-label="Close dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '14px 0 10px' }}>
+              <span style={{ fontSize: '1.4rem' }}>{deleteConfirmHabit.emoji}</span>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{deleteConfirmHabit.name}</strong>
+            </div>
+
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
+              All completion history for this habit will also be deleted. This action cannot be undone.
+            </p>
+
+            <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={deleting}
+                onClick={() => setDeleteConfirmHabit(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={deleting}
+                style={{
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                }}
+                onClick={handlePermanentDelete}
+              >
+                {deleting ? 'Deleting...' : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
