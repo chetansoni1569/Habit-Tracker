@@ -462,6 +462,34 @@ export async function setMentalState(
   );
 }
 
+export async function deleteMentalState(uid: string, date: string): Promise<void> {
+  if (isLocal(uid)) {
+    mockStorage.deleteLocalMentalState(uid, date);
+    return;
+  }
+
+  const docRef = doc(db!, 'users', uid, 'mentalState', date);
+  await deleteDoc(docRef);
+}
+
+export async function clearPastMentalStates(uid: string, beforeDate: string): Promise<void> {
+  if (isLocal(uid)) {
+    mockStorage.clearLocalPastMentalStates(uid, beforeDate);
+    return;
+  }
+
+  const colRef = collection(db!, 'users', uid, 'mentalState');
+  const snap = await getDocs(colRef);
+  const toDelete = snap.docs.filter((d) => d.id < beforeDate);
+
+  for (let i = 0; i < toDelete.length; i += 400) {
+    const batch = writeBatch(db!);
+    const chunk = toDelete.slice(i, i + 400);
+    chunk.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+}
+
 // ======================== BACKUP / FULL EXPORT ========================
 
 export async function exportAllUserData(uid: string) {

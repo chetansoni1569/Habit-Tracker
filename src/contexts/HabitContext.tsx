@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { format } from 'date-fns';
 import { useAuth } from './AuthContext';
 import {
   getAllHabits,
@@ -10,6 +11,8 @@ import {
   getCompletionsForMonth,
   getMentalStatesForMonth,
   setMentalState as setMentalStateService,
+  deleteMentalState as deleteMentalStateService,
+  clearPastMentalStates as clearPastMentalStatesService,
 } from '../services/firestore';
 import type { Habit, MentalState } from '../types';
 
@@ -33,6 +36,8 @@ interface HabitContextType {
   unarchiveHabit: (habitId: string) => Promise<void>;
   removeHabit: (habitId: string) => Promise<void>;
   updateMentalState: (date: string, mood: number, motivation: number) => Promise<void>;
+  deleteMentalState: (date: string) => Promise<void>;
+  clearPastMentalStates: () => Promise<void>;
   refreshHabits: () => Promise<void>;
 }
 
@@ -204,6 +209,43 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Delete mental state for an exact date
+  const deleteMentalState = async (date: string) => {
+    if (!user) return;
+    setMentalStates((prev) => {
+      const next = { ...prev };
+      delete next[date];
+      return next;
+    });
+
+    try {
+      await deleteMentalStateService(user.uid, date);
+    } catch (error) {
+      console.error('Error deleting mental state:', error);
+    }
+  };
+
+  // Clear all past mental state entries before today
+  const clearPastMentalStates = async () => {
+    if (!user) return;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    setMentalStates((prev) => {
+      const next: Record<string, MentalState> = {};
+      for (const [d, val] of Object.entries(prev)) {
+        if (d >= todayStr) {
+          next[d] = val;
+        }
+      }
+      return next;
+    });
+
+    try {
+      await clearPastMentalStatesService(user.uid, todayStr);
+    } catch (error) {
+      console.error('Error clearing past mental states:', error);
+    }
+  };
+
   // Compute applicable habits for the selected month:
   // Active habits appear + Archived habits appear IF they have completions in this month OR were archived after the start of this month
   const monthStart = new Date(selectedYear, selectedMonth, 1).toISOString();
@@ -241,6 +283,8 @@ export function HabitProvider({ children }: { children: ReactNode }) {
         unarchiveHabit,
         removeHabit,
         updateMentalState,
+        deleteMentalState,
+        clearPastMentalStates,
         refreshHabits,
       }}
     >

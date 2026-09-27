@@ -773,14 +773,39 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 .mental-state-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--text-primary);
   padding: 10px 14px;
-  text-align: center;
   border-bottom: 1px solid var(--border-color);
   letter-spacing: 1px;
+}
+
+.clear-past-mental-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-card-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.clear-past-mental-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
 }
 
 .mental-state-table {

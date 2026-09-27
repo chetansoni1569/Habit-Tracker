@@ -3,14 +3,26 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { format } from 'date-fns';
+import { RotateCcw } from 'lucide-react';
 import { useHabits } from '../../contexts/HabitContext';
 import { getMonthCalendarData, isFutureDate } from '../../utils/calendar';
 
 export default function MentalStateSection() {
-  const { mentalStates, selectedYear, selectedMonth, updateMentalState } = useHabits();
+  const {
+    mentalStates,
+    selectedYear,
+    selectedMonth,
+    updateMentalState,
+    deleteMentalState,
+    clearPastMentalStates,
+  } = useHabits();
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [editMood, setEditMood] = useState(5);
   const [editMotivation, setEditMotivation] = useState(5);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false);
+  const [showClearPastModal, setShowClearPastModal] = useState(false);
+  const [isClearingPast, setIsClearingPast] = useState(false);
 
   const weeks = useMemo(() => {
     return getMonthCalendarData(selectedYear, selectedMonth);
@@ -45,6 +57,7 @@ export default function MentalStateSection() {
     const existing = mentalStates[dateStr];
     setEditMood(existing?.mood ?? 5);
     setEditMotivation(existing?.motivation ?? 5);
+    setShowDeleteConfirmModal(false);
     setEditingDay(day);
   };
 
@@ -55,12 +68,50 @@ export default function MentalStateSection() {
     setEditingDay(null);
   };
 
+  const handleDeleteEntry = async () => {
+    if (editingDay === null) return;
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(editingDay).padStart(2, '0')}`;
+    setIsDeletingEntry(true);
+    try {
+      await deleteMentalState(dateStr);
+    } catch (err) {
+      console.error('Error deleting mental state:', err);
+    } finally {
+      setIsDeletingEntry(false);
+      setShowDeleteConfirmModal(false);
+      setEditingDay(null);
+    }
+  };
+
+  const handleClearPastMentalStates = async () => {
+    setIsClearingPast(true);
+    try {
+      await clearPastMentalStates();
+    } catch (err) {
+      console.error('Error clearing past mental states:', err);
+    } finally {
+      setIsClearingPast(false);
+      setShowClearPastModal(false);
+    }
+  };
+
   const selectedDateObj = editingDay !== null ? new Date(selectedYear, selectedMonth, editingDay) : null;
   const formattedSelectedDate = selectedDateObj ? format(selectedDateObj, 'EEEE, MMMM d, yyyy') : '';
 
   return (
     <div className="mental-state-container">
-      <div className="mental-state-title">Mental state</div>
+      <div className="mental-state-title">
+        <span>Mental state</span>
+        <button
+          type="button"
+          className="clear-past-mental-btn"
+          onClick={() => setShowClearPastModal(true)}
+          title="Clear all mental state entries recorded before today"
+        >
+          <RotateCcw size={12} />
+          Clear Past
+        </button>
+      </div>
 
       <div className="mental-state-table" tabIndex={0} role="region" aria-label="Mental state tracking calendar">
         {/* Date / Day Header row */}
@@ -212,10 +263,47 @@ export default function MentalStateSection() {
         </div>
       )}
 
+      {/* Bottom bar below Mental State section */}
+      <div className="mental-state-bottom-bar" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px 16px',
+        borderTop: '1px solid var(--border-color)',
+        background: 'var(--bg-card-light)',
+      }}>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+          Reset historical entries before today ({format(new Date(), 'MMM d, yyyy')})
+        </span>
+        <button
+          type="button"
+          className="btn-clear-all-past"
+          onClick={() => setShowClearPastModal(true)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '7px 16px',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            color: '#ffffff',
+            background: '#dc2626',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            transition: 'background 0.15s',
+          }}
+          title="Clear all past mental state entries before today"
+        >
+          <RotateCcw size={13} />
+          Clear All Past Mental State
+        </button>
+      </div>
+
       {/* Edit Modal */}
       {editingDay !== null && (
         <div className="modal-overlay" onClick={() => setEditingDay(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '380px' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="modal-title" style={{ fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Log Mental State</span>
               <button
@@ -270,9 +358,148 @@ export default function MentalStateSection() {
               </div>
             </div>
 
-            <div className="modal-actions" style={{ marginTop: '20px' }}>
-              <button type="button" className="btn-secondary" onClick={() => setEditingDay(null)}>Cancel</button>
-              <button type="button" className="btn-primary" onClick={handleSaveMentalState}>Save</button>
+            <div className="modal-actions" style={{
+              marginTop: '22px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <button
+                type="button"
+                className="btn-danger"
+                style={{
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+                onClick={() => setShowDeleteConfirmModal(true)}
+              >
+                Delete Entry
+              </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setEditingDay(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSaveMentalState}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Entry Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => !isDeletingEntry && setShowDeleteConfirmModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '380px' }}>
+            <div className="modal-title" style={{ fontSize: '0.95rem', color: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Delete Mental State</span>
+              <button
+                type="button"
+                onClick={() => !isDeletingEntry && setShowDeleteConfirmModal(false)}
+                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px' }}
+                aria-label="Close dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.5 }}>
+              Are you sure you want to delete the Mood and Motivation entry for <strong>{formattedSelectedDate}</strong>?
+            </p>
+
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.4 }}>
+              This will permanently delete this day's document from Firestore and remove it from the table and chart. Habit completion data will not be affected.
+            </p>
+
+            <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={isDeletingEntry}
+                onClick={() => setShowDeleteConfirmModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={isDeletingEntry}
+                style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
+                onClick={handleDeleteEntry}
+              >
+                {isDeletingEntry ? 'Deleting...' : 'Yes, Delete Entry'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Past Mental State Confirmation Modal */}
+      {showClearPastModal && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => !isClearingPast && setShowClearPastModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <div className="modal-title" style={{ fontSize: '0.95rem', color: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Clear All Past Mental State</span>
+              <button
+                type="button"
+                onClick={() => !isClearingPast && setShowClearPastModal(false)}
+                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px' }}
+                aria-label="Close dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.5 }}>
+              Are you sure you want to remove all Mental State entries recorded <strong>before today</strong> ({format(new Date(), 'MMMM d, yyyy')})?
+            </p>
+
+            <div style={{ background: 'var(--bg-card-light)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', marginBottom: '18px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              ℹ️ <strong>What happens:</strong>
+              <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                <li>All Mood &amp; Motivation documents before today will be permanently deleted from Firestore.</li>
+                <li>Today's entry and future dates will remain available for new entries.</li>
+                <li>Habit tracking &amp; completion data will <strong>not</strong> be touched.</li>
+              </ul>
+            </div>
+
+            <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={isClearingPast}
+                onClick={() => setShowClearPastModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={isClearingPast}
+                style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
+                onClick={handleClearPastMentalStates}
+              >
+                {isClearingPast ? 'Clearing...' : 'Clear All Past Entries'}
+              </button>
             </div>
           </div>
         </div>

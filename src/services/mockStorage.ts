@@ -257,9 +257,43 @@ export function setLocalMentalState(
   localStorage.setItem(key, JSON.stringify(store));
 }
 
+export function deleteLocalMentalState(uid: string, date: string): void {
+  const key = `${STORAGE_KEY_PREFIX}mental_${uid}`;
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    const store: Record<string, MentalState> = JSON.parse(raw);
+    if (store[date]) {
+      delete store[date];
+      localStorage.setItem(key, JSON.stringify(store));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function clearLocalPastMentalStates(uid: string, beforeDate: string): void {
+  const key = `${STORAGE_KEY_PREFIX}mental_${uid}`;
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    const store: Record<string, MentalState> = JSON.parse(raw);
+    const updated: Record<string, MentalState> = {};
+    for (const [date, val] of Object.entries(store)) {
+      if (date >= beforeDate) {
+        updated[date] = val;
+      }
+    }
+    localStorage.setItem(key, JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
 export function clearLocalUserData(uid: string): void {
   localStorage.removeItem(`${STORAGE_KEY_PREFIX}profile_${uid}`);
   localStorage.removeItem(`${STORAGE_KEY_PREFIX}habits_${uid}`);
   localStorage.removeItem(`${STORAGE_KEY_PREFIX}completions_${uid}`);
   localStorage.removeItem(`${STORAGE_KEY_PREFIX}mental_${uid}`);
 }
+
