@@ -771,16 +771,20 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
 .mental-state-table {
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .mental-state-grid {
   display: flex;
   font-size: 0.78rem;
   border-bottom: 1px solid var(--border-color);
+  width: max-content;
+  min-width: 100%;
 }
 
 .mental-label {
   min-width: 170px;
+  width: 170px;
   padding: 8px 12px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -794,10 +798,83 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   font-size: 0.8rem;
 }
 
+.mental-header-grid {
+  background: var(--bg-card-light);
+}
+
+.mental-header-label {
+  background: var(--bg-card-light);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.mental-header-cell {
+  width: 32px;
+  min-width: 32px;
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-card-light);
+  cursor: pointer;
+  transition: all 0.12s;
+  user-select: none;
+}
+
+.mental-header-cell .mental-hdr-dayname {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.mental-header-cell .mental-hdr-daynum {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.mental-header-cell:hover:not(.future-day) {
+  background: var(--bg-hover);
+}
+
+.mental-header-cell:hover:not(.future-day) .mental-hdr-daynum {
+  color: var(--text-primary);
+}
+
+.mental-header-cell.today-col,
+.mental-value-cell.today-col {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.mental-header-cell.today-col .mental-hdr-daynum {
+  color: var(--accent-light);
+}
+
+.mental-header-cell.is-selected,
+.mental-value-cell.is-selected {
+  background: rgba(99, 102, 241, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.mental-header-cell.future-day,
+.mental-value-cell.future-day {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
 .mental-values {
   display: flex;
-  flex: 1;
-  overflow-x: auto;
+  flex-shrink: 0;
 }
 
 .mental-value-cell {
@@ -815,7 +892,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   font-size: 0.78rem;
 }
 
-.mental-value-cell:hover {
+.mental-value-cell:hover:not(.future-day) {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
