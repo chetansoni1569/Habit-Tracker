@@ -479,7 +479,21 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   display: grid;
   grid-template-columns: 1fr 280px;
   gap: 16px;
-  margin-bottom: 16px;
+  align-items: start;
+}
+
+.dashboard-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dashboard-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
 /* ===== Habit Table ===== */

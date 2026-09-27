@@ -3,11 +3,11 @@ import { useHabits } from '../../contexts/HabitContext';
 import { getTopHabits } from '../../utils/analytics';
 
 export default function TopHabits() {
-  const { habits, completions, selectedYear, selectedMonth } = useHabits();
+  const { activeHabits, habits, completions, selectedYear, selectedMonth } = useHabits();
 
   const topHabits = useMemo(() => {
-    return getTopHabits(habits, completions, selectedYear, selectedMonth, 10);
-  }, [habits, completions, selectedYear, selectedMonth]);
+    return getTopHabits(activeHabits || habits, completions, selectedYear, selectedMonth, 10);
+  }, [activeHabits, habits, completions, selectedYear, selectedMonth]);
 
   if (topHabits.length === 0) {
     return (

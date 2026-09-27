@@ -36,16 +36,16 @@ export default function DashboardPage() {
         <OverallStatsChart />
       </div>
 
-      {/* Main Grid: Habit Table + Analysis */}
+      {/* Main Content: Left Column (Habits + Mental State) & Right Column (Analysis + Top Habits) */}
       <div className="main-grid">
-        <HabitTable />
-        <AnalysisTable />
-      </div>
-
-      {/* Bottom Row: Mental State + Top Habits */}
-      <div className="bottom-row">
-        <MentalStateSection />
-        <TopHabits />
+        <div className="dashboard-left-col">
+          <HabitTable />
+          <MentalStateSection />
+        </div>
+        <div className="dashboard-right-col">
+          <AnalysisTable />
+          <TopHabits />
+        </div>
       </div>
     </div>
   );

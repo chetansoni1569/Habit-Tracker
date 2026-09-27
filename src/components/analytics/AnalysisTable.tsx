@@ -3,11 +3,11 @@ import { useHabits } from '../../contexts/HabitContext';
 import { calculateHabitAnalysis } from '../../utils/analytics';
 
 export default function AnalysisTable() {
-  const { habits, completions, selectedYear, selectedMonth } = useHabits();
+  const { activeHabits, habits, completions, selectedYear, selectedMonth } = useHabits();
 
   const analysis = useMemo(() => {
-    return calculateHabitAnalysis(habits, completions, selectedYear, selectedMonth);
-  }, [habits, completions, selectedYear, selectedMonth]);
+    return calculateHabitAnalysis(activeHabits || habits, completions, selectedYear, selectedMonth);
+  }, [activeHabits, habits, completions, selectedYear, selectedMonth]);
 
   if (analysis.length === 0) {
     return (
