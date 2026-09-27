@@ -5,11 +5,11 @@ import { useHabits } from '../../contexts/HabitContext';
 import { calculateDailyProgress } from '../../utils/analytics';
 
 export default function DailyProgressChart() {
-  const { habits, completions, selectedYear, selectedMonth } = useHabits();
+  const { activeHabits, completions, selectedYear, selectedMonth } = useHabits();
 
   const data = useMemo(() => {
-    return calculateDailyProgress(habits, completions, selectedYear, selectedMonth);
-  }, [habits, completions, selectedYear, selectedMonth]);
+    return calculateDailyProgress(activeHabits, completions, selectedYear, selectedMonth);
+  }, [activeHabits, completions, selectedYear, selectedMonth]);
 
   return (
     <div className="chart-section">

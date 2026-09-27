@@ -18,8 +18,9 @@ export function calculateDailyProgress(
   year: number,
   month: number
 ): { day: number; percentage: number }[] {
+  const activeHabits = habits.filter((h) => h.active !== false);
   const daysInMonth = getDaysInMonth(new Date(year, month));
-  const applicable = habits.length;
+  const applicable = activeHabits.length;
 
   if (applicable === 0) return [];
 
@@ -28,7 +29,7 @@ export function calculateDailyProgress(
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     let completed = 0;
-    habits.forEach((habit) => {
+    activeHabits.forEach((habit) => {
       if (completions[dateKey]?.[habit.id]) {
         completed++;
       }
