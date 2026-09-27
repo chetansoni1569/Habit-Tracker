@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only read and write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Habits subcollection: users/{userId}/habits/{habitId}
+      match /habits/{habitId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Habit completions subcollection: users/{userId}/habitCompletions/{completionId}
+      match /habitCompletions/{completionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Mental state subcollection: users/{userId}/mentalState/{date}
+      match /mentalState/{date} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Deny all other access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
